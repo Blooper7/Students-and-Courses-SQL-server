@@ -2,6 +2,8 @@ import os
 import sqlite3
 
 class DataAccess:
+    primary_keys={"Students":"studentId","Courses":"courseId"}
+    
     def __init__(self):
         self.db_path='./StudentSQL'
     
@@ -69,6 +71,53 @@ class DataAccess:
             cursor.execute(sql_command)
         return [[row["courseId"], row["courseCode"], row["courseName"]] for row in cursor.fetchall()]
     
+    #Handle Schedules
+    def create_schedule_item(self, studentId, courseId):
+        sql_command = f"INSERT INTO Schedules(studentId, courseId) VALUES ({studentId}, {courseId});"
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory=sqlite3.Row
+            cur=conn.execute(sql_command)
+    
+    def delete_schedule_item(self, studentId, courseId):
+        sql_command = f"DELETE FROM Schedules WHERE studentId={studentId} AND courseId={courseId};"
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory=sqlite3.Row
+            cur=conn.execute(sql_command)
+    
+    def get_all_schedules(self):
+        sql_command = "SELECT * FROM Schedules;"
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory=sqlite3.Row
+            cursor=conn.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON;")
+            cursor.execute(sql_command)
+        return [[row["studentId"], row["courseId"]] for row in cursor.fetchall()]
+    
+    def lookup_by_id(self, table, item_id):
+        sql_command = f"SELECT * FROM {table} WHERE {self.primary_keys[table]}={item_id};"
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory=sqlite3.Row
+            cursor=conn.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON;")
+            cursor.execute(sql_command)
+        return cursor.fetchone()
+    
+    def make_schedule_references(self, schedule_data):
+        data=[[] for i in range(len(schedule_data))]
+        for i in range(len(schedule_data)):
+            data[i].append(' '.join(self.lookup_by_id("Students",schedule_data[i][0])[1:]))
+            data[i].append(self.lookup_by_id("Courses",schedule_data[i][1])[1])
+        return data
+    
+    def get_student_schedule(self, studentId):
+        sql_command=f"SELECT * FROM Schedules WHERE studentId={studentId};"
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory=sqlite3.Row
+            cursor=conn.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON;")
+            cursor.execute(sql_command)
+        data=cursor.fetchall()
+        return self.make_schedule_references(data)
     
 if __name__ == "__main__":
     da=DataAccess()
@@ -83,4 +132,9 @@ if __name__ == "__main__":
     #da.create_student("Tom", "Smith")
     #da.delete_student("first=Bob", "last=Ross")
     #print(da.get_all_student_data())
+    
+    #da.create_schedule_item(2, 2)
+    print(da.get_all_schedules())
+    print(da.lookup_by_id("Students", 2)[1])
+    print(da.get_student_schedule(2))
     
