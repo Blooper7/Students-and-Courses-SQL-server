@@ -43,7 +43,7 @@ class Server(BaseHTTPRequestHandler):
             message="I'm Sam's SQL server!"
             
         elif self.path=="/get":
-            message=f"[Tables: {DataAccess().get_table_names()}]\n"
+            message=f"[Tables: {', '.join(DataAccess().get_table_names())}]\n"
             
             if "Students" in body.decode('utf-8'):
                 data=DataAccess().get_all_student_data()
